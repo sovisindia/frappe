@@ -46,7 +46,12 @@ class NavbarSettings(Document):
 def get_app_logo():
 	app_logo = frappe.db.get_single_value("Navbar Settings", "app_logo", cache=True)
 	if not app_logo:
-		app_logo = frappe.get_hooks("app_logo_url")[-1]
+		app_logo_url = frappe.get_hooks("app_logo_url", app_name='sovisindia')
+		if len(app_logo_url) >= 2:
+			desk_theme = frappe.db.get_value("User", frappe.session.user, "desk_theme")
+			app_logo = app_logo_url[1] if desk_theme == "Dark" else app_logo_url[0]
+		else:
+			app_logo = app_logo_url[-1]
 
 	return app_logo
 

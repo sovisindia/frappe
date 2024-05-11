@@ -28,6 +28,9 @@ PDF_CONTENT_ERRORS = [
 	"RemoteHostClosedError",
 ]
 
+# Added by Sovis India
+DEFAULT_MARGIN = "0mm"
+
 
 def pdf_header_html(soup, head, content, styles, html_id, css):
 	return frappe.render_template(
@@ -152,10 +155,10 @@ def prepare_options(html, options):
 	)
 
 	if not options.get("margin-right"):
-		options["margin-right"] = "15mm"
+		options["margin-right"] = DEFAULT_MARGIN
 
 	if not options.get("margin-left"):
-		options["margin-left"] = "15mm"
+		options["margin-left"] = DEFAULT_MARGIN
 
 	html, html_options = read_options_from_html(html)
 	options.update(html_options or {})
@@ -330,9 +333,9 @@ def prepare_header_footer(soup: BeautifulSoup):
 			options[html_id] = fname
 		else:
 			if html_id == "header-html":
-				options["margin-top"] = "15mm"
+				options["margin-top"] = DEFAULT_MARGIN
 			elif html_id == "footer-html":
-				options["margin-bottom"] = "15mm"
+				options["margin-bottom"] = DEFAULT_MARGIN
 
 	return options
 
