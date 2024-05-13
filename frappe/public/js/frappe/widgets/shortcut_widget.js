@@ -59,14 +59,7 @@ export default class ShortcutWidget extends Widget {
 				return;
 			}
 
-			if (this.type == "DocType" && this.doc_view == "New") {
-				frappe.new_doc(this.link_to, {
-					'payment_type': 'Receive',
-					'party_type': 'Supplier'
-				})
-			} else {	
-				frappe.set_route(route);
-			}
+			frappe.set_route(route);
 		});
 	}
 
