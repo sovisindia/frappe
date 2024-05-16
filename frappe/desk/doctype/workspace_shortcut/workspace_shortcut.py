@@ -21,7 +21,6 @@ class WorkspaceShortcut(Document):
 		kanban_board: DF.Link | None
 		label: DF.Data
 		link_to: DF.DynamicLink | None
-		options: DF.JSON | None
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
