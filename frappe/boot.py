@@ -8,6 +8,7 @@ import frappe
 import frappe.defaults
 import frappe.desk.desk_page
 from frappe.core.doctype.navbar_settings.navbar_settings import get_app_logo, get_navbar_settings
+from frappe.desk.doctype.changelog_feed.changelog_feed import get_changelog_feed_items
 from frappe.desk.doctype.form_tour.form_tour import get_onboarding_ui_tours
 from frappe.desk.doctype.route_history.route_history import frequently_visited_links
 from frappe.desk.form.load import get_meta_bundle
@@ -23,6 +24,7 @@ from frappe.social.doctype.energy_point_settings.energy_point_settings import (
 )
 from frappe.utils import add_user_info, cstr, get_system_timezone
 from frappe.utils.change_log import get_versions
+from frappe.utils.frappecloud import on_frappecloud
 from frappe.website.doctype.web_page_view.web_page_view import is_tracking_enabled
 
 
@@ -107,6 +109,7 @@ def get_bootinfo():
 	bootinfo.translated_doctypes = get_translated_doctypes()
 	bootinfo.subscription_conf = add_subscription_conf()
 	bootinfo.marketplace_apps = get_marketplace_apps()
+	bootinfo.changelog_feed = get_changelog_feed_items()
 
 	return bootinfo
 
@@ -162,7 +165,9 @@ def get_user_pages_or_reports(parent, cache=False):
 	page = DocType("Page")
 	report = DocType("Report")
 
-	if parent == "Report":
+	is_report = parent == "Report"
+
+	if is_report:
 		columns = (report.name.as_("title"), report.ref_doctype, report.report_type)
 	else:
 		columns = (page.title.as_("title"),)
@@ -204,7 +209,7 @@ def get_user_pages_or_reports(parent, cache=False):
 		.distinct()
 	)
 
-	if parent == "Report":
+	if is_report:
 		pages_with_standard_roles = pages_with_standard_roles.where(report.disabled == 0)
 
 	pages_with_standard_roles = pages_with_standard_roles.run(as_dict=True)
@@ -219,19 +224,20 @@ def get_user_pages_or_reports(parent, cache=False):
 		frappe.qb.from_(hasRole).select(Count("*")).where(hasRole.parent == parentTable.name)
 	)
 
-	# pages with no role are allowed
-	if parent == "Page":
-		pages_with_no_roles = (
-			frappe.qb.from_(parentTable)
-			.select(parentTable.name, parentTable.modified, *columns)
-			.where(no_of_roles == 0)
-		).run(as_dict=True)
+	# pages and reports with no role are allowed
+	rows_with_no_roles = (
+		frappe.qb.from_(parentTable)
+		.select(parentTable.name, parentTable.modified, *columns)
+		.where(no_of_roles == 0)
+	).run(as_dict=True)
 
-		for p in pages_with_no_roles:
-			if p.name not in has_role:
-				has_role[p.name] = {"modified": p.modified, "title": p.title}
+	for r in rows_with_no_roles:
+		if r.name not in has_role:
+			has_role[r.name] = {"modified": r.modified, "title": r.title}
+			if is_report:
+				has_role[r.name] |= {"ref_doctype": r.ref_doctype}
 
-	elif parent == "Report":
+	if is_report:
 		if not has_permission("Report", raise_exception=False):
 			return {}
 
@@ -443,7 +449,7 @@ def get_marketplace_apps():
 	apps = []
 	cache_key = "frappe_marketplace_apps"
 
-	if frappe.conf.developer_mode:
+	if frappe.conf.developer_mode or not on_frappecloud():
 		return apps
 
 	def get_apps_from_fc():
