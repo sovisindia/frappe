@@ -62,8 +62,7 @@ $.extend(frappe.model, {
 				var df = frappe.meta.has_field(doctype, fieldname);
 				if (
 					df &&
-					["Link", "Data", "Select", "Dynamic Link"].includes(df.fieldtype) &&
-					!df.no_copy
+					["Link", "Data", "Select", "Dynamic Link", "Check"].includes(df.fieldtype)
 				) {
 					doc[fieldname] = value;
 				}
