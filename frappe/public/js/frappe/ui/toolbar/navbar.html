@@ -1,5 +1,5 @@
 <div class="sticky-top">
-	<header class="navbar navbar-expand" role="navigation">
+	<header class="navbar navbar-expand flex flex-column" role="navigation">
 		<div class="container">
 			<a class="navbar-brand navbar-home" href="/app">
 				<img
@@ -137,6 +137,9 @@
 				</ul>
 			</div>
 		</div>
+
+		<ul class="container si-nav-menu-main flex overflow-x-auto">
+		</ul>
 	</header>
 
 	{% if !localStorage.getItem("dismissed_announcement_widget") && strip_html(navbar_settings.announcement_widget) != '' %}
