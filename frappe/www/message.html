@@ -31,7 +31,7 @@ html, body {
 		{% endif %}
 		{% if primary_action %}
 		<div><a href='{{ primary_action or "/" }}' class='btn btn-primary btn-sm btn-block'>
-			{{ primary_label or _("Home") }}</a></div>
+			{{ primary_label or '<img src="/assets/sovisindia/images/SI-PLANE-BRANDING-DARK.svg">' }}</a></div>
 		{% endif %}
 	{% endblock %}
 	</div>

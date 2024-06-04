@@ -209,7 +209,7 @@ class File(Document):
 		if self.is_remote_file or not self.file_url:
 			return
 
-		if not self.file_url.startswith(("/files/", "/private/files/")):
+		if not self.file_url.startswith(("/files/", "/private/files/", "/api/method/")):
 			# Probably an invalid URL since it doesn't start with http either
 			frappe.throw(
 				_("URL must start with http:// or https://"),

@@ -62,7 +62,9 @@ frappe.ui.form.PrintView = class {
 	}
 
 	setup_toolbar() {
-		this.page.set_primary_action(__("Print"), () => this.printit(), "printer");
+		if (window.SovisApp) {
+			this.page.set_primary_action(__("Share"), () => { SovisApp.shareContent("DEMO") }, "external-link");
+		} else this.page.set_primary_action(__("Print"), () => this.printit(), "printer");
 
 		this.page.add_button(__("Full Page"), () => this.render_page("/printview?"), {
 			icon: "full-page",

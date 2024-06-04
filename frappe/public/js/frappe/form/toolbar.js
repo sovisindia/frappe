@@ -351,6 +351,21 @@ frappe.ui.form.Toolbar = class Toolbar {
 			);
 		}
 
+		// whatsapp
+		if (frappe.model.can_email(null, me.frm) && me.frm.doc.docstatus < 2) {
+			this.page.add_menu_item(
+				__("Whatsapp"),
+				function () {
+					me.frm.whatsapp_doc();
+				},
+				true,
+				{
+					shortcut: "Alt+W",
+					condition: () => !this.frm.is_new(),
+				}
+			);
+		}
+
 		// go to field modal
 		this.page.add_menu_item(
 			__("Jump to field"),
