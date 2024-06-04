@@ -1664,7 +1664,7 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 				standard: true,
 			},
 			{
-				shortcut: "ctrl+e",
+				shortcut: "Ctrl+E",
 				label: __("Email"),
 				action: () => {
 					let filters = this.get_filter_values(true);
