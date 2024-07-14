@@ -36,7 +36,12 @@ _sites_path = os.environ.get("SITES_PATH", ".")
 
 # If gc.freeze is done then importing modules before forking allows us to share the memory
 if frappe._tune_gc:
+	import gettext
+
+	import babel
+	import babel.messages
 	import bleach
+	import num2words
 	import pydantic
 
 	import frappe.boot
@@ -74,7 +79,6 @@ def after_response_wrapper(app):
 			app(environ, start_response),
 			(
 				frappe.rate_limiter.update,
-				frappe.monitor.stop,
 				frappe.recorder.dump,
 				frappe.request.after_response.run,
 				frappe.destroy,

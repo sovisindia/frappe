@@ -1101,12 +1101,6 @@ export default class GridRow {
 			parent = column.field_area,
 			df = column.df;
 
-		// no text editor in grid
-		if (df.fieldtype == "Text Editor") {
-			df = Object.assign({}, df);
-			df.fieldtype = "Text";
-		}
-
 		var field = frappe.ui.form.make_control({
 			df: df,
 			parent: parent,
@@ -1436,7 +1430,9 @@ export default class GridRow {
 		let field = this.on_grid_fields_dict[fieldname];
 		// reset field value
 		if (field) {
-			field.docname = this.doc.name;
+			// the below if statement is added to factor in the exception when this.doc is undefined -
+			// - after row removals via customize_form.js on links, actions and states child-tables
+			if (this.doc) field.docname = this.doc.name;
 			field.refresh();
 		}
 

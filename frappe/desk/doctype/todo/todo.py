@@ -89,15 +89,17 @@ class ToDo(Document):
 			return
 
 		try:
-			assignments = frappe.get_all(
+			assignments = frappe.db.get_values(
 				"ToDo",
-				filters={
+				{
 					"reference_type": self.reference_type,
 					"reference_name": self.reference_name,
 					"status": ("not in", ("Cancelled", "Closed")),
 					"allocated_to": ("is", "set"),
 				},
-				pluck="allocated_to",
+				"allocated_to",
+				pluck=True,
+				for_update=True,
 			)
 			assignments.reverse()
 
@@ -105,7 +107,7 @@ class ToDo(Document):
 				frappe.db.set_single_value(
 					self.reference_type,
 					"_assign",
-					json.dumps(assignments),
+					json.dumps(assignments) if assignments else "",
 					update_modified=False,
 				)
 			else:
@@ -113,7 +115,7 @@ class ToDo(Document):
 					self.reference_type,
 					self.reference_name,
 					"_assign",
-					json.dumps(assignments),
+					json.dumps(assignments) if assignments else "",
 					update_modified=False,
 				)
 
