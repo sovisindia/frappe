@@ -37,9 +37,8 @@ class PrintFormat(Document):
 		margin_right: DF.Float
 		margin_top: DF.Float
 		module: DF.Link | None
-		page_number: DF.Literal[
-			"Hide", "Top Left", "Top Center", "Top Right", "Bottom Left", "Bottom Center", "Bottom Right"
-		]
+		orientation: DF.Literal["Portrait", "Landscape"]
+		page_number: DF.Literal["Hide", "Top Left", "Top Center", "Top Right", "Bottom Left", "Bottom Center", "Bottom Right"]
 		print_format_builder: DF.Check
 		print_format_builder_beta: DF.Check
 		print_format_type: DF.Literal["Jinja", "JS"]
@@ -47,7 +46,6 @@ class PrintFormat(Document):
 		raw_printing: DF.Check
 		show_section_headings: DF.Check
 		standard: DF.Literal["No", "Yes"]
-
 	# end: auto-generated types
 
 	def onload(self):
