@@ -5,7 +5,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>{{ title }}</title>
 	<meta name="generator" content="frappe">
-	{{ include_style('print.bundle.css') }}
+	{{ "" if print_format.custom_format else include_style('print.bundle.css') }}
 	{% if print_style %}
 		<style>
 		{{ print_style }}
@@ -13,17 +13,9 @@
 	{% endif %}
 </head>
 <body>
-	<div class="action-banner print-hide">
-		<a class="p-2" onclick="window.print();">
-			{{ _("Print") }}
-		</a>
-		<a class="p-2"
-			href="/api/method/frappe.utils.print_format.download_pdf?doctype={{doctype|e}}&name={{name|e}}&key={{key|e}}">
-			{{ _('Get PDF') }}
-		</a>
-	</div>
 	<div class="print-format-gutter">
-		<div class="print-format">
+		{% set orientation = print_format.orientation %}
+		<div class="print-format{{ " landscape" if orientation == "Landscape" else "" }}">
 			{{ body }}
 		</div>
 	</div>

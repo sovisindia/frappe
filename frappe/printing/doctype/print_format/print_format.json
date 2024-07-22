@@ -11,6 +11,7 @@
   "default_print_language",
   "column_break_3",
   "standard",
+  "orientation",
   "custom_format",
   "disabled",
   "section_break_6",
@@ -123,7 +124,6 @@
    "options": "Jinja"
   },
   {
-   "depends_on": "eval:!doc.custom_format",
    "fieldname": "section_break_9",
    "fieldtype": "Section Break",
    "label": "Style Settings"
@@ -255,12 +255,23 @@
    "fieldtype": "Select",
    "label": "Page Number",
    "options": "Hide\nTop Left\nTop Center\nTop Right\nBottom Left\nBottom Center\nBottom Right"
+  },
+  {
+   "allow_in_quick_entry": 1,
+   "bold": 1,
+   "default": "Portrait",
+   "depends_on": "eval:doc.custom_format",
+   "fieldname": "orientation",
+   "fieldtype": "Select",
+   "label": "Orientation",
+   "options": "Portrait\nLandscape",
+   "reqd": 1
   }
  ],
  "icon": "fa fa-print",
  "idx": 1,
  "links": [],
- "modified": "2023-12-12 19:59:37.133301",
+ "modified": "2024-07-21 09:25:50.137426",
  "modified_by": "Administrator",
  "module": "Printing",
  "name": "Print Format",

@@ -67,8 +67,13 @@
 	border-radius: var(--border-radius);
 }
 
+.print-preview.landscape {
+	max-width: 11.69in;
+	min-height: 8.3in;
+}
+
 .print-format-skeleton {
-	padding: 0.75in;
+	padding: 0.75cm;
 	min-height: 11.69in;
 	position: relative;
 
@@ -132,7 +137,7 @@
 		position: absolute;
 		bottom: 0;
 		left: 0;
-		padding: 0.75in;
+		padding: 0.75cm;
 		width: 100%;
 
 		.skeleton-card {

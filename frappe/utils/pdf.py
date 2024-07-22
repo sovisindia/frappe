@@ -152,10 +152,10 @@ def prepare_options(html, options):
 	)
 
 	if not options.get("margin-right"):
-		options["margin-right"] = "0mm"
+		options["margin-right"] = "7.5mm"
 
 	if not options.get("margin-left"):
-		options["margin-left"] = "0mm"
+		options["margin-left"] = "7.5mm"
 
 	html, html_options = read_options_from_html(html)
 	options.update(html_options or {})
@@ -296,8 +296,8 @@ def prepare_header_footer(soup: BeautifulSoup):
 	head = soup.find("head").contents
 	styles = soup.find_all("style")
 
-	print_css = bundled_asset("print.bundle.css").lstrip("/")
-	css = frappe.read_file(os.path.join(frappe.local.sites_path, print_css))
+	# print_css = bundled_asset("print.bundle.css").lstrip("/")
+	# css = frappe.read_file(os.path.join(frappe.local.sites_path, print_css))
 
 	# extract header and footer
 	for html_id in ("header-html", "footer-html"):
@@ -318,7 +318,7 @@ def prepare_header_footer(soup: BeautifulSoup):
 				content=content,
 				styles=styles,
 				html_id=html_id,
-				css=css,
+				# css=css,
 			)
 
 			# create temp file
@@ -330,9 +330,9 @@ def prepare_header_footer(soup: BeautifulSoup):
 			options[html_id] = fname
 		else:
 			if html_id == "header-html":
-				options["margin-top"] = "0mm"
+				options["margin-top"] = "7.5mm"
 			elif html_id == "footer-html":
-				options["margin-bottom"] = "0mm"
+				options["margin-bottom"] = "7.5mm"
 
 	return options
 
