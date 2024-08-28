@@ -38,6 +38,7 @@ class PrintFormat(Document):
 		margin_top: DF.Float
 		module: DF.Link | None
 		orientation: DF.Literal["Portrait", "Landscape"]
+		import_bootstrap: DF.Check
 		page_number: DF.Literal["Hide", "Top Left", "Top Center", "Top Right", "Bottom Left", "Bottom Center", "Bottom Right"]
 		print_format_builder: DF.Check
 		print_format_builder_beta: DF.Check
