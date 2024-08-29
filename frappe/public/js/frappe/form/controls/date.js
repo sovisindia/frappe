@@ -157,12 +157,17 @@ frappe.ui.form.ControlDate = class ControlDate extends frappe.ui.form.ControlDat
 		return "";
 	}
 	validate(value) {
-		if (value && !frappe.datetime.validate(value)) {
-			let sysdefaults = frappe.sys_defaults;
-			let date_format =
+		const input_value = this.$input.val();
+		if (value && !frappe.datetime.validate(input_value)) {
+			if (input_value && input_value.match(/^[-+]?\d{1,3}$/)) {
+				return frappe.datetime.add_days(this.get_now_date(), +input_value)
+			} else {	
+				let sysdefaults = frappe.sys_defaults;
+				let date_format =
 				sysdefaults && sysdefaults.date_format ? sysdefaults.date_format : "yyyy-mm-dd";
-			frappe.msgprint(__("Date {0} must be in format: {1}", [value, date_format]));
-			return "";
+				frappe.msgprint(__("Date {0} must be in format: {1}", [value, date_format]));
+				return "";
+			}
 		}
 		return value;
 	}
