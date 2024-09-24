@@ -299,8 +299,8 @@ def prepare_header_footer(soup: BeautifulSoup):
 	head = soup.find("head").contents
 	styles = soup.find_all("style")
 
-	# print_css = bundled_asset("print.bundle.css").lstrip("/")
-	# css = frappe.read_file(os.path.join(frappe.local.sites_path, print_css))
+	print_css = bundled_asset("print.bundle.css").lstrip("/")
+	css = frappe.read_file(os.path.join(frappe.local.sites_path, print_css))
 
 	# extract header and footer
 	for html_id in ("header-html", "footer-html"):
@@ -321,7 +321,7 @@ def prepare_header_footer(soup: BeautifulSoup):
 				content=content,
 				styles=styles,
 				html_id=html_id,
-				# css=css,
+				css=css,
 			)
 
 			# create temp file
