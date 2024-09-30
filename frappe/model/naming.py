@@ -203,7 +203,10 @@ def set_name_from_naming_options(autoname, doc):
 	elif _autoname.startswith("naming_series:"):
 		set_name_by_naming_series(doc)
 	elif _autoname.startswith("prompt"):
-		_prompt_autoname(autoname, doc)
+		if not hasattr(doc, '__newname'):
+			set_name_by_naming_series(doc)
+		else:
+			_prompt_autoname(autoname, doc)
 	elif _autoname.startswith("format:"):
 		doc.name = _format_autoname(autoname, doc)
 	elif "#" in autoname:
