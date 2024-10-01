@@ -84,6 +84,49 @@ frappe.ui.form.PrintView = class {
 			"",
 			__("Form")
 		);
+
+		this.page.add_button(__("Share"), async () => {
+			if (navigator.canShare({ title: this.frm.docname, files: [] })) {
+				const pdf = `/api/method/frappe.utils.print_format.download_pdf?` + new URLSearchParams({
+					doctype: this.frm.doctype,
+					name: this.frm.docname,
+					format: this.selected_format(),
+					no_letterhead: this.with_letterhead() ? "0" : "1",
+					letterhead: this.get_letterhead(),
+					settings: JSON.stringify(this.additional_settings),
+					_lang: this.lang_code
+				}).toString();
+
+				frappe.show_progress("Preparing File to Share", 0, 0, null, true)
+				
+				const fileResp = await fetch(pdf);
+				const contentLength = fileResp.headers.get('content-length');
+				const contentType = fileResp.headers.get('content-type');
+				const total = parseInt(contentLength, 10);
+				const values = []
+				let loaded = 0;
+				const reader = fileResp.body.getReader();
+				
+				while (true) {
+					const {done, value} = await reader.read();
+					if (done) break;
+					values.push(value)
+					loaded += value.byteLength;
+					frappe.show_progress("Preparing File to Share", loaded, total, null, true)
+				}
+				
+				const fileBlob = new Blob(values);
+				const file = new File([fileBlob], `${this.frm.docname}.pdf`, { type: contentType });
+				
+				try {
+					await navigator.share({ title: this.frm.docname, files: [file] })
+				} catch (err) {
+					frappe.msgprint(err, "Sharing Failed")
+				}
+			} else {
+				frappe.msgprint("Sharing not allowed by browser!")
+			}
+		});
 	}
 
 	setup_sidebar() {
