@@ -335,7 +335,6 @@ def prepare_header_footer(soup: BeautifulSoup):
 			if html_id == "header-html":
 				options["margin-top"] = get_format_margin(frappe.local.form_dict.format, "margin_top", "7.5mm")
 			elif html_id == "footer-html":
-				print("Yahoo", frappe.local.form_dict.format, frappe.db.get_value("Print Format", frappe.local.form_dict.format, "margin_bottom"))
 				options["margin-bottom"] = get_format_margin(frappe.local.form_dict.format, "margin_bottom", "7.5mm")
 
 	return options
