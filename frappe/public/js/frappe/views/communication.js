@@ -621,7 +621,7 @@ frappe.views.CommunicationComposer = class {
 					if (!f.file_name) return;
 					if (!attachment_rows.find(`[data-file-name="${f.name}"]`).length) {
 						f.file_url = frappe.urllib.get_full_url(f.file_url);
-						attachment_rows.append(this.get_attachment_row(f));
+						attachment_rows.append(this.get_attachment_row(f, /^e-Waybill_(.*?)\.pdf$/.test(f.file_name)));
 					}
 				});
 			}

@@ -1672,197 +1672,128 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 				shortcut: "Ctrl+E",
 				label: __("Email"),
 				action: () => {
-					let filters = this.get_filter_values(true);
-					if (frappe.urllib.get_dict("prepared_report_name")) {
-						filters = Object.assign(
-							frappe.urllib.get_dict("prepared_report_name"),
-							filters
-						);
-					}
-
-					let boolean_labels = { 1: __("Yes"), 0: __("No") };
-					let applied_filters = Object.fromEntries(
-						Object.entries(filters).map(([key, value]) => [
-							frappe.query_report.get_filter(key).df.label,
-							frappe.query_report.get_filter(key).df.fieldtype == "Check"
-								? boolean_labels[value]
-								: value,
-						])
-					);
-
-					const visible_idx = this.datatable?.bodyRenderer.visibleRowIndices || [];
-					if (visible_idx.length + 1 === this.data?.length) {
-						visible_idx.push(visible_idx.length);
-					}
-
-					const args = {
-						report_name: this.report_name,
-						custom_columns: this.custom_columns?.length ? this.custom_columns : [],
-						file_format_type: "Excel",
-						filters: this.get_filter_values(true),
-						applied_filters: applied_filters,
-						visible_idx,
-						csv_delimiter: ',',
-						csv_quoting: 2,
-						include_indentation: undefined,
-						include_filters: 0,
-						csrf_token: frappe.csrf_token
-					};
-
-					const toQueryString = obj => "?".concat(Object.keys(obj).map(e => `${encodeURIComponent(e)}=${encodeURIComponent((typeof obj[e] == 'object') ? JSON.stringify(obj[e]) : obj[e])}`).join("&"));
-
-					fetch('/api/method/frappe.desk.query_report.export_query'+toQueryString(args), {
-						method: 'POST'
-					}).then(async res => {
-						const blob = await res.blob();
-
-						let form_data = new FormData();
-						form_data.append('file', blob, `${this.report_doc.name} ${this.report_doc.doctype} ${frappe.datetime.get_datetime_as_string()}.xlsx`);
-
-						form_data.append('is_private', 1);
-						form_data.append('folder', "Home/Attachments");
-
-						if (this.doctype && this.docname) {
-							form_data.append('doctype', this.report_doc.doctype);
-							form_data.append('docname', this.report_doc.name);
-						}
-
-						const file = await fetch('/api/method/upload_file', {
-							method: 'POST',
-							headers: {
-								'Accept': 'application/json',
-								'X-Frappe-CSRF-Token': frappe.csrf_token
-							},
-							body: form_data
+					const rows_in_order = this.datatable.datamanager.rowViewOrder
+						.map((index) => {
+							if (this.datatable.bodyRenderer.visibleRowIndices.includes(index)) {
+								return this.data[index];
+							}
 						})
+						.filter(Boolean);
+
+					if (this.add_totals_row) {
+						const total_data = this.get_columns_totals(this.data);
+
+						total_data["name"] = __("Total");
+						total_data.is_total_row = true;
+						rows_in_order.push(total_data);
+					}
+
+					
+					var print_settings = locals[":Print Settings"]["Print Settings"];
+
+					var company = frappe.defaults.get_default("company");
+					var default_letter_head = "";
+				
+					if (locals[":Company"] && locals[":Company"][company]) {
+						default_letter_head = locals[":Company"][company]["default_letter_head"] || "";
+					}
+
+					const pdf_columns = [
+						"posting_date", 
+						"account", 
+						"debit",
+						"credit",
+						"balance",
+						"against_voucher", 
+						"bill_no", 
+						"remarks" 
+					];
+
+					$.extend(print_settings, { 
+						letter_head: default_letter_head,
+						orientation: "Landscape",
+						columns: pdf_columns,
+					})
+					
+					const base_url = frappe.urllib.get_base_url();
+					const print_css = frappe.boot.print_css;
+					const landscape = print_settings.orientation == "Landscape";
+
+					const custom_format = this.report_settings.html_format || null;
+					const columns = this.get_columns_for_print(print_settings, custom_format);
+					const data = this.get_data_for_print();
+					const applied_filters = this.get_filter_values();
+
+					const filters_html = this.get_filters_html_for_print();
+					const template = print_settings.columns || !custom_format ? "print_grid" : custom_format;
+					const content = frappe.render_template(template, {
+						title: __(this.report_name),
+						subtitle: filters_html,
+						filters: applied_filters,
+						data: data,
+						original_data: this.data,
+						columns: columns,
+						report: this,
+					});
+
+					// Render Report in HTML
+					const html = frappe.render_template("print_template", {
+						title: __(this.report_name),
+						content: content,
+						base_url: base_url,
+						print_css: print_css,
+						print_settings: print_settings,
+						landscape: landscape,
+						columns: columns,
+						lang: frappe.boot.lang,
+						layout_direction: frappe.utils.is_rtl() ? "rtl" : "ltr",
+						can_use_smaller_font: this.report_doc.is_standard === "Yes" && custom_format ? 0 : 1,
+					});
+
+					let filter_values = [],
+						name_len = 0;
+					for (var key of Object.keys(applied_filters)) {
+						name_len = name_len + applied_filters[key].toString().length;
+						if (name_len > 200) break;
+						filter_values.push(applied_filters[key]);
+					}
+
+					if (filter_values.length) {
+						print_settings.report_name = `${__(this.report_name)}_${filter_values.join("_")}.pdf`;
+					} else {
+						print_settings.report_name = `${__(this.report_name)}.pdf`;
+					}
+					frappe.render_pdf(html, print_settings, false).then(async (pdf) => {
+						let form_data = new FormData();
+						form_data.append(
+							"file",
+							new Blob([pdf]),
+							`${this.report_doc.name} ${this.report_doc.doctype
+							} ${frappe.datetime.get_datetime_as_string()}.pdf`
+						);
+						form_data.append("is_private", 1);
+						form_data.append("folder", "Home/Attachments");
+						if (this.doctype && this.docname) {
+							form_data.append("doctype", this.report_doc.doctype);
+							form_data.append("docname", this.report_doc.name);
+						}
+						const file = await fetch("/api/method/upload_file", {
+							method: "POST",
+							headers: {
+								Accept: "application/json",
+								"X-Frappe-CSRF-Token": frappe.csrf_token,
+							},
+							body: form_data,
+						});
 						const api_resp = (await file.json()).message;
 						const filename = api_resp.name;
-						
 						const email_dialog = new frappe.views.CommunicationComposer({
-							attachments: [api_resp]
-						})
-
-						email_dialog.dialog.$wrapper.find(`[data-file-name=${filename}]`).trigger('click')
+							attachments: [api_resp],
+						});
+						email_dialog.dialog.$wrapper
+							.find(`[data-file-name=${filename}]`)
+							.trigger("click");
 					})
-					/* 
-					frappe.prompt(
-						[
-							{
-								fieldname: "file_format",
-								default: "PDF",
-								fieldtype: "Select",
-								options: "PDF\nExcel",
-							},
-						],
-						(field) => {
-							if (field.file_format == "Excel") {
-								let filters = this.get_filter_values(true);
-								if (frappe.urllib.get_dict("prepared_report_name")) {
-									filters = Object.assign(
-										frappe.urllib.get_dict("prepared_report_name"),
-										filters
-									);
-								}
-
-								let boolean_labels = { 1: __("Yes"), 0: __("No") };
-								let applied_filters = Object.fromEntries(
-									Object.entries(filters).map(([key, value]) => [
-										frappe.query_report.get_filter(key).df.label,
-										frappe.query_report.get_filter(key).df.fieldtype == "Check"
-											? boolean_labels[value]
-											: value,
-									])
-								);
-
-								const visible_idx =
-									this.datatable?.bodyRenderer.visibleRowIndices || [];
-								if (visible_idx.length + 1 === this.data?.length) {
-									visible_idx.push(visible_idx.length);
-								}
-
-								const args = {
-									report_name: this.report_name,
-									custom_columns: this.custom_columns?.length
-										? this.custom_columns
-										: [],
-									file_format_type: "Excel",
-									filters: this.get_filter_values(true),
-									applied_filters: applied_filters,
-									visible_idx,
-									csv_delimiter: ",",
-									csv_quoting: 2,
-									include_indentation: undefined,
-									include_filters: 0,
-									csrf_token: frappe.csrf_token,
-								};
-
-								const toQueryString = (obj) =>
-									"?".concat(
-										Object.keys(obj)
-											.map(
-												(e) =>
-													`${encodeURIComponent(e)}=${encodeURIComponent(
-														typeof obj[e] == "object"
-															? JSON.stringify(obj[e])
-															: obj[e]
-													)}`
-											)
-											.join("&")
-									);
-
-								fetch(
-									"/api/method/frappe.desk.query_report.export_query" +
-										toQueryString(args),
-									{
-										method: "POST",
-									}
-								).then(async (res) => {
-									const blob = await res.blob();
-
-									let form_data = new FormData();
-									form_data.append(
-										"file",
-										blob,
-										`${this.report_doc.name} ${
-											this.report_doc.doctype
-										} ${frappe.datetime.get_datetime_as_string()}.xlsx`
-									);
-
-									form_data.append("is_private", 1);
-									form_data.append("folder", "Home/Attachments");
-
-									if (this.doctype && this.docname) {
-										form_data.append("doctype", this.report_doc.doctype);
-										form_data.append("docname", this.report_doc.name);
-									}
-
-									const file = await fetch("/api/method/upload_file", {
-										method: "POST",
-										headers: {
-											Accept: "application/json",
-											"X-Frappe-CSRF-Token": frappe.csrf_token,
-										},
-										body: form_data,
-									});
-									const api_resp = (await file.json()).message;
-									const filename = api_resp.name;
-
-									const email_dialog = new frappe.views.CommunicationComposer({
-										attachments: [api_resp],
-									});
-
-									email_dialog.dialog.$wrapper
-										.find(`[data-file-name=${filename}]`)
-										.trigger("click");
-								});
-							} else {
-								
-							}
-						},
-						__("Select File Format"),
-						"Continue"
-					);
-					*/
 				},
 				standard: true,
 			},
