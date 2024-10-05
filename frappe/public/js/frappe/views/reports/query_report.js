@@ -1334,7 +1334,7 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 		raise && this.toggle_message(false);
 
 		return this.filters
-			.filter((f) => f.get_value())
+			.filter((f) => f.get_value?.())
 			.map((f) => {
 				var v = f.get_value();
 				// hidden fields dont have $input
@@ -1789,6 +1789,7 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 						const filename = api_resp.name;
 						const email_dialog = new frappe.views.CommunicationComposer({
 							attachments: [api_resp],
+							doc: this.get_filter_values()
 						});
 						email_dialog.dialog.$wrapper
 							.find(`[data-file-name=${filename}]`)
