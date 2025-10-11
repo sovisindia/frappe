@@ -134,7 +134,7 @@ frappe.views.CommunicationComposer = class {
 			},
 			{
 				label: __("Message"),
-				fieldtype: "Text Editor",
+				fieldtype: "HTML Editor",
 				fieldname: "content",
 				onchange: frappe.utils.debounce(this.save_as_draft.bind(this), 300),
 				depends_on: "eval:!doc.use_html",

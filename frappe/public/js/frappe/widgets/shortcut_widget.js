@@ -16,6 +16,7 @@ export default class ShortcutWidget extends Widget {
 			format: this.format,
 			link_to: this.link_to,
 			doc_view: this.doc_view,
+			options: this.options,
 			color: this.color,
 			restrict_to_domain: this.restrict_to_domain,
 			stats_filter: this.stats_filter,
