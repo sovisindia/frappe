@@ -13,6 +13,8 @@
   "default_print_language",
   "column_break_3",
   "standard",
+  "orientation",
+  "import_bootstrap",
   "custom_format",
   "disabled",
   "pdf_generator",
@@ -130,7 +132,6 @@
    "options": "Jinja"
   },
   {
-   "depends_on": "eval:!doc.custom_format",
    "fieldname": "section_break_9",
    "fieldtype": "Section Break",
    "label": "Style Settings"
@@ -276,6 +277,27 @@
    "fieldtype": "Select",
    "label": "Print Format For",
    "options": "DocType\nReport"
+  },
+  {
+   "allow_in_quick_entry": 1,
+   "bold": 1,
+   "default": "Portrait",
+   "depends_on": "eval:doc.custom_format",
+   "fieldname": "orientation",
+   "fieldtype": "Select",
+   "label": "Orientation",
+   "mandatory_depends_on": "eval:doc.custom_format",
+   "options": "Portrait\nLandscape"
+  },
+  {
+   "allow_in_quick_entry": 1,
+   "bold": 1,
+   "default": "0",
+   "depends_on": "eval:doc.custom_format",
+   "fieldname": "import_bootstrap",
+   "fieldtype": "Check",
+   "label": "Import Bootstrap",
+   "reqd": 1
   },
   {
    "depends_on": "eval:doc.print_format_for == \"Report\"",

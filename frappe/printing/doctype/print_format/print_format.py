@@ -31,12 +31,14 @@ class PrintFormat(Document):
 		font_size: DF.Int
 		format_data: DF.Code | None
 		html: DF.Code | None
+		import_bootstrap: DF.Check
 		line_breaks: DF.Check
 		margin_bottom: DF.Float
 		margin_left: DF.Float
 		margin_right: DF.Float
 		margin_top: DF.Float
 		module: DF.Link | None
+		orientation: DF.Literal["Portrait", "Landscape"]
 		page_number: DF.Literal[
 			"Hide", "Top Left", "Top Center", "Top Right", "Bottom Left", "Bottom Center", "Bottom Right"
 		]

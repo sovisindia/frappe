@@ -29,6 +29,11 @@ PDF_CONTENT_ERRORS = [
 ]
 
 
+def get_format_margin(format, direction, default):
+	margin = frappe.db.get_value("Print Format", format, direction)
+	return default if margin is None else str(margin)+"mm"
+
+
 def pdf_header_html(soup, head, content, styles, html_id, css, path=None):
 	if not path:
 		path = "templates/print_formats/pdf_header_footer.html"
@@ -156,10 +161,10 @@ def prepare_options(html, options):
 	)
 
 	if not options.get("margin-right"):
-		options["margin-right"] = "15mm"
+		options["margin-right"] = get_format_margin(frappe.local.form_dict.format, "margin_right", "7.5mm") or "7.5mm"
 
 	if not options.get("margin-left"):
-		options["margin-left"] = "15mm"
+		options["margin-left"] = get_format_margin(frappe.local.form_dict.format, "margin_left", "7.5mm") or "7.5mm"
 
 	html, html_options = read_options_from_html(html)
 	options.update(html_options or {})
@@ -335,9 +340,9 @@ def prepare_header_footer(soup: BeautifulSoup):
 			options[html_id] = fname
 		else:
 			if html_id == "header-html":
-				options["margin-top"] = "15mm"
+				options["margin-top"] = get_format_margin(frappe.local.form_dict.format, "margin_top", "7.5mm") or "7.5mm"
 			elif html_id == "footer-html":
-				options["margin-bottom"] = "15mm"
+				options["margin-bottom"] = get_format_margin(frappe.local.form_dict.format, "margin_bottom", "7.5mm") or "7.5mm"
 
 	return options
 

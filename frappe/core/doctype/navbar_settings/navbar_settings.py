@@ -49,10 +49,12 @@ def get_app_logo():
 	)
 
 	if not app_logo:
-		logos = frappe.get_hooks("app_logo_url")
-		app_logo = logos[0]
-		if len(logos) == 2:
-			app_logo = logos[1]
+		app_logo_url = frappe.get_hooks("app_logo_url", app_name='sovisindia')
+		if len(app_logo_url) >= 2:
+			desk_theme = frappe.db.get_value("User", frappe.session.user, "desk_theme")
+			app_logo = app_logo_url[1] if desk_theme == "Dark" else app_logo_url[0]
+		else:
+			app_logo = app_logo_url[-1]
 
 	return app_logo
 

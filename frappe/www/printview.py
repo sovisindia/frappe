@@ -81,6 +81,7 @@ def get_context(context):
 	return {
 		"body": body,
 		"print_style": get_print_style(frappe.form_dict.style, print_format),
+		"print_format": print_format,
 		"comment": frappe.session.user,
 		"title": frappe.utils.strip_html(cstr(doc.get_title() or doc.name)),
 		"lang": frappe.local.lang,
