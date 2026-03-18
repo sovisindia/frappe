@@ -7,6 +7,11 @@ import datetime
 import json
 import re
 from collections import Counter
+from functools import lru_cache
+
+import sqlparse
+from sqlparse import tokens
+from sqlparse.sql import Function, Parenthesis, Statement
 
 import frappe
 import frappe.defaults
@@ -30,6 +35,22 @@ from frappe.utils import (
 	make_filter_tuple,
 )
 from frappe.utils.data import DateTimeLikeObject, get_datetime, getdate, sbool
+
+
+@lru_cache(maxsize=128)
+def _parse_sql(field: str) -> Statement | None:
+	"""
+	Parse a given SQL statement using `sqlparse`.
+
+	Args:
+		field (str): The SQL statement string to parse.
+
+	Returns:
+		Statement | None: A `sqlparse.sql.Statement` object if parsing succeeds, otherwise `None`.
+	"""
+	if parsed := sqlparse.parse(field):
+		return parsed[0]
+
 
 LOCATE_PATTERN = re.compile(r"locate\([^,]+,\s*[`\"]?name[`\"]?\s*\)", flags=re.IGNORECASE)
 LOCATE_CAST_PATTERN = re.compile(r"locate\(([^,]+),\s*([`\"]?name[`\"]?)\s*\)", flags=re.IGNORECASE)
@@ -215,7 +236,9 @@ class DatabaseQuery:
 
 		if self.distinct:
 			args.fields = "distinct " + args.fields
-			args.order_by = ""  # TODO: recheck for alternative
+			if frappe.db.db_type == "postgres":
+				# PostgreSQL requires ORDER BY expressions to appear in SELECT list when using DISTINCT
+				args.order_by = ""
 
 		# Postgres requires any field that appears in the select clause to also
 		# appear in the order by and group by clause
@@ -398,6 +421,52 @@ from {tables}
 			"sleep",
 		]
 
+		def _find_subqueries(parsed: Statement) -> list:
+			"""
+			Recursively find all subqueries in a parsed SQL statement.
+			"""
+			subqueries = []
+
+			for token in parsed.tokens:
+				if isinstance(token, Parenthesis):
+					# Check for DML token for subquery check
+					is_subquery = False
+					for sub_token in token.tokens:
+						if sub_token.ttype is tokens.DML:
+							is_subquery = True
+							break
+					if is_subquery:
+						subqueries.append(token)
+					# Recursively check for nested subqueries
+					subqueries.extend(_find_subqueries(token))
+				elif token.is_group:
+					subqueries.extend(_find_subqueries(token))
+
+			return subqueries
+
+		def _check_sql_token(statement: Statement) -> None:
+			"""
+			Checks the output of `sqlparse.parse()` to detect blocked functions and subqueries.
+			"""
+			if _find_subqueries(statement):
+				_raise_exception()
+
+			for token in statement.tokens:
+				if isinstance(token, Function):
+					if (name := (token.get_name())) and name.lower() in blacklisted_functions:
+						_raise_exception()
+
+				if token.ttype in tokens.Keyword:
+					if any(re.search(rf"\b{kw}\b", token.value.lower()) for kw in blacklisted_keywords):
+						_raise_exception()
+
+				if token.ttype in tokens.Name and not re.match(r"^`\w.*`$", token.value.strip()):
+					if any(re.search(rf"\b{kw}\b", token.value.lower()) for kw in blacklisted_keywords):
+						_raise_exception()
+
+				if token.is_group:
+					_check_sql_token(token)
+
 		def _raise_exception():
 			frappe.throw(_("Use of sub-query or function is restricted"), frappe.DataError)
 
@@ -412,21 +481,8 @@ from {tables}
 			lower_field = field.lower().strip()
 
 			if SUB_QUERY_PATTERN.match(field):
-				# Check for subquery anywhere in the field, not just at the beginning
-				if "(" in lower_field:
-					# Check all parentheses pairs, not just the first one
-					paren_start = 0
-					while True:
-						location = lower_field.find("(", paren_start)
-						if location == -1:
-							break
-						token = lower_field[location + 1 :].lstrip().split(" ", 1)[0]
-						if any(
-							re.search(r"\b" + re.escape(keyword) + r"\b", token)
-							for keyword in blacklisted_keywords + blacklisted_functions
-						):
-							_raise_exception()
-						paren_start = location + 1
+				# Check all tokens for subquery detection
+				_check_sql_token(_parse_sql(field))
 
 				if "@" in lower_field:
 					# prevent access to global variables
@@ -510,6 +566,8 @@ from {tables}
 	def check_read_permission(self, doctype: str, parent_doctype: str | None = None):
 		if self.flags.ignore_permissions:
 			return
+
+		self.join = "left join"
 
 		if doctype not in self.permission_map:
 			self._set_permission_map(doctype, parent_doctype)
@@ -625,7 +683,6 @@ from {tables}
 		if self.flags.ignore_permissions:
 			return
 
-		asterisk_fields = []
 		permitted_fields = set(
 			get_permitted_fields(
 				doctype=self.doctype,
@@ -636,7 +693,10 @@ from {tables}
 		)
 		permitted_child_table_fields = {}
 
-		for i, field in enumerate(self.fields):
+		# Create a copy of the fields list and reverse it to avoid index issues when removing fields
+		fields_to_check = list(enumerate(self.fields))[::-1]
+
+		for i, field in fields_to_check:
 			# field: 'count(distinct `tabPhoto`.name) as total_count'
 			# column: 'tabPhoto.name'
 			# field: 'count(`tabPhoto`.name) as total_count'
@@ -646,9 +706,10 @@ from {tables}
 				continue
 
 			column = columns[0]
+			# handle * fields
 			if column == "*" and "*" in field:
 				if not in_function("*", field):
-					asterisk_fields.append(i)
+					self.fields[i : i + 1] = permitted_fields
 				continue
 
 			# handle pseudo columns
@@ -702,12 +763,6 @@ from {tables}
 			# remove if access not allowed
 			else:
 				self.remove_field(i)
-
-		# handle * fields
-		j = 0
-		for i in asterisk_fields:
-			self.fields[i + j : i + j + 1] = permitted_fields
-			j = j + len(permitted_fields) - 1
 
 	def prepare_filter_condition(self, f):
 		"""Returns a filter condition in the format:

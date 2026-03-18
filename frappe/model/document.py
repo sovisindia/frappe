@@ -297,9 +297,9 @@ class Document(BaseDocument):
 		self._set_defaults()
 		self.set_user_and_timestamp()
 		self.set_docstatus()
+		self.check_permission("create")
 		self.check_if_latest()
 		self._validate_links()
-		self.check_permission("create")
 		self.run_method("before_insert")
 		self.set_new_name(set_name=set_name, set_child_names=set_child_names)
 		self.set_parent_in_children()
@@ -1513,10 +1513,14 @@ class Document(BaseDocument):
 
 			return view_log
 
-	def log_error(self, title=None, message=None):
+	def log_error(self, title=None, message=None, *, defer_insert=False):
 		"""Helper function to create an Error Log"""
 		return frappe.log_error(
-			message=message, title=title, reference_doctype=self.doctype, reference_name=self.name
+			message=message,
+			title=title,
+			reference_doctype=self.doctype,
+			reference_name=self.name,
+			defer_insert=defer_insert,
 		)
 
 	def get_signature(self):

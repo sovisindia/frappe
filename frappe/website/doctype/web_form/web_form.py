@@ -258,7 +258,7 @@ def get_context(context):
 		context.boot = get_boot_data()
 		context.boot["link_title_doctypes"] = frappe.boot.get_link_title_doctypes()
 
-		context.webform_banner_image = self.banner_image
+		context.webform_banner_image = context.get("banner_image") or self.banner_image
 		context.pop("banner_image", None)
 
 	def add_metatags(self, context):
@@ -604,6 +604,10 @@ def accept(web_form, data):
 		# insert
 		doc = frappe.new_doc(doctype)
 
+	# Set ignore_mandatory flag if allow_incomplete is enabled
+	if web_form.allow_incomplete:
+		doc.flags.ignore_mandatory = True
+
 	# set values
 	for field in web_form.web_form_fields:
 		fieldname = field.fieldname
@@ -634,7 +638,7 @@ def accept(web_form, data):
 		if web_form.login_required and frappe.session.user == "Guest":
 			frappe.throw(_("You must login to submit this form"))
 
-		ignore_mandatory = True if files else False
+		ignore_mandatory = True if (files or web_form.allow_incomplete) else False
 
 		doc.insert(ignore_permissions=True, ignore_mandatory=ignore_mandatory)
 
